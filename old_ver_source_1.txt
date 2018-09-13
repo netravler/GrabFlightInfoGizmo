@@ -1,0 +1,126 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+using System.Net;
+using System.IO;
+
+
+namespace Grap_flight_info_gizmo
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+
+            string bigline = "";
+            string edithold = "";
+            string killplease = "";
+            string newbigline = "";
+            string keepstring = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890|";
+
+            WebClient wClient = new WebClient();
+            Stream data = wClient.OpenRead("http://flightaware.com/live/flight/" + textBox1.Text.Trim());
+            StreamReader read = new StreamReader(data);
+
+            List<string> lines = new List<string>();
+
+            // ok lets spin down to the good stuff!!!
+            string nextLine = read.ReadLine();  
+
+            while (!nextLine.Contains(@"Target"" data-target='/"))
+            {
+                nextLine = read.ReadLine();  
+            }
+
+            // found it now lets eat!!!
+            while (nextLine != null)
+            {
+                if (nextLine.Contains(@"Target"" data-target='/"))
+                {
+                    bigline += nextLine.Trim();
+                    nextLine = read.ReadLine();
+
+                    // so we're going to try and grab up to the next record -- try that is
+                    while (!nextLine.Contains(@"Target"" data-target='/") || nextLine.Contains("More Past Flights") || nextLine != null) 
+                    {
+                        bigline += nextLine.Trim();
+                        nextLine = read.ReadLine();
+                    }
+
+                    // cut junk out here there will be B lot!!!
+
+                    edithold = bigline;
+
+                    killplease = @"</thead>  <tr class=""smallActiverow1 rowClickTarget"" data-target='/live/flight/";
+                    edithold = bigline.Replace(killplease, "");
+                    killplease = @"</tr>  <tr class=""smallActiverow1 rowClickTarget"" data-target='/live/flight/";
+                    edithold = edithold.Replace(killplease, "");
+                    killplease = @"/";
+                    edithold = edithold.Replace(killplease, "|");
+
+                    // remove everything not uppercase or B | 
+
+                    foreach (char spyme in edithold)
+                    {
+                        if (keepstring.Contains(spyme))
+                        {
+                            newbigline += spyme;
+                        }
+                    }
+
+                    edithold = newbigline;
+
+                    newbigline = ""; // clear the hold var
+
+                    // more getting rid of B pesky tag FAE051 and |||||
+                    killplease = @"FAE051";
+                    edithold = edithold.Replace(killplease, "");
+
+                    killplease = @"|||||";
+                    edithold = edithold.Replace(killplease, "|");
+
+                    killplease = @"|||";
+                    edithold = edithold.Replace(killplease, "|");
+
+                    killplease = @"||";
+                    edithold = edithold.Replace(killplease, "|");
+
+                    lines.Add(edithold);
+                }
+                else
+                {
+                    // not the right string bounce baby!!!
+                    nextLine = read.ReadLine();
+                }
+
+             //nextLine = read.ReadLine();
+
+            }
+
+            richTextBox1.Lines = lines.ToArray();
+
+            /* Jack Henry and Associates Jets
+                 
+                    http://flightaware.com/live/flight/N894JH
+                    http://flightaware.com/live/flight/N156JH
+                    http://flightaware.com/live/flight/N152JH
+                    http://flightaware.com/live/flight/N157JH
+                    http://flightaware.com/live/flight/N156JH
+
+                */
+
+                // unjunk
+
+        }
+    }
+}
